@@ -1,0 +1,67 @@
+NOTE: 1.25.1現在、onnxruntimeでCUDA EPを入れた状態でcontrib_opsを無効にするとコンパイルが通らなくなる。
+
+Codexに書かせたパッチなのでさすがに上流にPRするわけにはいかない...
+
+https://github.com/microsoft/onnxruntime/issues/28537
+
+diff --git a/cmake/onnxruntime_providers_cuda.cmake b/cmake/onnxruntime_providers_cuda.cmake
+index 6336070e83..2d2a900c96 100644
+--- a/cmake/onnxruntime_providers_cuda.cmake
++++ b/cmake/onnxruntime_providers_cuda.cmake
+@@ -77,6 +77,14 @@
+     # add using ONNXRUNTIME_ROOT so they show up under the 'contrib_ops' folder in Visual Studio
+     source_group(TREE ${ONNXRUNTIME_ROOT} FILES ${onnxruntime_cuda_contrib_ops_cc_srcs} ${onnxruntime_cuda_contrib_ops_cu_srcs})
+     list(APPEND onnxruntime_providers_cuda_src ${onnxruntime_cuda_contrib_ops_cc_srcs} ${onnxruntime_cuda_contrib_ops_cu_srcs})
++  elseif(onnxruntime_DISABLE_CONTRIB_OPS AND NOT onnxruntime_CUDA_MINIMAL)
++    set(onnxruntime_cuda_onnx_attention_helper_srcs
++      "${ONNXRUNTIME_ROOT}/contrib_ops/cuda/bert/attention_kv_cache.cu"
++      "${ONNXRUNTIME_ROOT}/contrib_ops/cuda/bert/attention_transpose.cu"
++      "${ONNXRUNTIME_ROOT}/contrib_ops/cuda/bert/unfused_attention.cu"
++    )
++    source_group(TREE ${ONNXRUNTIME_ROOT} FILES ${onnxruntime_cuda_onnx_attention_helper_srcs})
++    list(APPEND onnxruntime_providers_cuda_src ${onnxruntime_cuda_onnx_attention_helper_srcs})
+   endif()
+ 
+   if (onnxruntime_ENABLE_TRAINING_OPS)
+diff --git a/onnxruntime/core/providers/cuda/llm/attention.cc b/onnxruntime/core/providers/cuda/llm/attention.cc
+index 0c2a646278..ddef475d55 100644
+--- a/onnxruntime/core/providers/cuda/llm/attention.cc
++++ b/onnxruntime/core/providers/cuda/llm/attention.cc
+@@ -21,6 +21,8 @@ namespace cuda {
+ 
+ namespace llm_attention_detail {
+ 
++constexpr float kCutlassSafeMaskFilterValue = -1.0e+30f;
++
+ template <typename NodeType>
+ bool HasOutput(const NodeType& node, size_t output_index) {
+   if constexpr (requires(const NodeType& candidate) { candidate.OutputCount(); candidate.OutputExists(output_index); }) {
+@@ -94,9 +96,14 @@ Attention<T>::Attention(const OpKernelInfo& info) : CudaKernel(info) {
+               "softmax_precision must be a valid TensorProto data type (0, 1, 10, or 16).");
+   ORT_ENFORCE(scale_ > 0 || std::isnan(scale_), "scale must be greater than 0 if specified");
+ 
++#ifndef DISABLE_CONTRIB_OPS
+   const auto* kernel_options = this->GetAttentionKernelOptions();
+   disable_flash_attention_ = std::is_same<T, float>::value || !kernel_options->UseFlashAttention();
+   disable_memory_efficient_attention_ = !kernel_options->UseEfficientAttention();
++#else
++  disable_flash_attention_ = true;
++  disable_memory_efficient_attention_ = true;
++#endif
+ }
+ 
+ // ============================================================================
+@@ -153,7 +160,12 @@ Status Attention<T>::ConvertAttnMaskToBias(
+     int64_t num_elements = attn_mask->Shape().Size();
+     converted_mask_buffer = GetScratchBuffer<void>(
+         num_elements * sizeof(NativeCudaT), GetComputeStream(context));
+-    float mask_filter_value = static_cast<float>(std::numeric_limits<T>::lowest());
++    // CUTLASS online softmax multiplies attention scores by kLog2e (≈1.4427).
++    // For float/bf16, |lowest() × kLog2e| > FLT_MAX, overflowing to -inf and
++    // causing s_prime=0 → NaN for fully-masked batches. Cap to prevent this.
++    // See kCutlassSafeMaskFilterValue for details.
++    float mask_filter_value = std::max(static_cast<float>(std::numeric_limits<T>::lowest()),
++                                       llm_attention_detail::kCutlassSafeMaskFilterValue);
+     ORT_RETURN_IF_ERROR(LaunchConvertBoolMaskToAttentionBias<NativeCudaT>(
+         attn_mask->Data<bool>(),
+         reinterpret_cast<NativeCudaT*>(converted_mask_buffer.get()),

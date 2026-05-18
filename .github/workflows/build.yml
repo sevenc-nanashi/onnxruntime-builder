@@ -124,7 +124,7 @@ jobs:
             os: ubuntu-22.04
             spec_os: Linux
             spec_arch: x86_64
-            gcc_version: "13"
+            gcc_version: "12"
             cuda_version: 12.4.1
             cuda_sub_packages: "[]" # デフォルト
             cudnn_url: https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-8.9.7.29_cuda12-archive.tar.xz
@@ -363,7 +363,7 @@ jobs:
           fi
 
       - name: Install newer binutils
-        if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.os == 'ubuntu-22.04' && matrix.gcc_version == '13'
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.os == 'ubuntu-22.04' && contains(matrix.build_opts, '--use_cuda')
         env:
           BINUTILS_VERSION: "2.42"
           BINUTILS_SHA256: f6e4d41fd5fc778b06b7891457b3620da5ecea1006c6a4a41ae998109f85a800

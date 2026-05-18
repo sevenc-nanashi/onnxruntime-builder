@@ -332,6 +332,8 @@ jobs:
 
       - name: Install and configure build dependencies on Linux
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu')
+        env:
+          GCC_VERSION: ${{ matrix.gcc_version }}
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -340,22 +342,24 @@ jobs:
               wget \
               qemu-user-binfmt
 
-          if [ -n "${{ matrix.gcc_version }}" ]; then
+          if [ -n "$GCC_VERSION" ]; then
             . /etc/os-release
-            if [ "$VERSION_CODENAME" = "jammy" ] && [ "${{ matrix.gcc_version }}" -ge 13 ]; then
+            if [ "$VERSION_CODENAME" = "jammy" ] && [ "$GCC_VERSION" -ge 13 ]; then
               sudo apt-get install -y software-properties-common
               sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
               sudo apt-get update
             fi
 
             sudo apt-get install -y \
-                gcc-${{ matrix.gcc_version }}"$ARCH_SUFFIX" \
-                g++-${{ matrix.gcc_version }}"$ARCH_SUFFIX"
+                gcc-"$GCC_VERSION""$ARCH_SUFFIX" \
+                g++-"$GCC_VERSION""$ARCH_SUFFIX"
 
             # Set environment variable CC / CXX
-            echo "CC=${ARCH_PREFIX}gcc-${{ matrix.gcc_version }}" >> "$GITHUB_ENV"
-            echo "CXX=${ARCH_PREFIX}g++-${{ matrix.gcc_version }}" >> "$GITHUB_ENV"
-            echo "CUDAHOSTCXX=${ARCH_PREFIX}g++-${{ matrix.gcc_version }}" >> "$GITHUB_ENV"
+            {
+              echo "CC=${ARCH_PREFIX}gcc-$GCC_VERSION"
+              echo "CXX=${ARCH_PREFIX}g++-$GCC_VERSION"
+              echo "CUDAHOSTCXX=${ARCH_PREFIX}g++-$GCC_VERSION"
+            } >> "$GITHUB_ENV"
           fi
 
       # ONNX Runtime v1.23.0 requires CMake 3.28 or higher.

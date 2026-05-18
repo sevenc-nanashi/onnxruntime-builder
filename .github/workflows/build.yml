@@ -347,16 +347,12 @@ jobs:
             if [ "$VERSION_CODENAME" = "jammy" ] && [ "$GCC_VERSION" -ge 13 ]; then
               sudo apt-get install -y software-properties-common
               sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-              sudo add-apt-repository -y ppa:ubuntu-toolchain-r/ppa
               sudo apt-get update
             fi
 
             sudo apt-get install -y \
-                binutils \
                 gcc-"$GCC_VERSION""$ARCH_SUFFIX" \
                 g++-"$GCC_VERSION""$ARCH_SUFFIX"
-
-            as --version
 
             # Set environment variable CC / CXX
             {
@@ -365,6 +361,32 @@ jobs:
               echo "CUDAHOSTCXX=${ARCH_PREFIX}g++-$GCC_VERSION"
             } >> "$GITHUB_ENV"
           fi
+
+      - name: Install newer binutils
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.os == 'ubuntu-22.04' && matrix.gcc_version == '13'
+        env:
+          BINUTILS_VERSION: "2.42"
+          BINUTILS_SHA256: f6e4d41fd5fc778b06b7891457b3620da5ecea1006c6a4a41ae998109f85a800
+        run: |
+          wget -O binutils.tar.xz "https://ftp.gnu.org/gnu/binutils/binutils-$BINUTILS_VERSION.tar.xz"
+          echo "$BINUTILS_SHA256  binutils.tar.xz" | sha256sum --check
+          mkdir binutils-src binutils-build
+          tar -xf binutils.tar.xz --strip-components=1 -C binutils-src
+
+          (
+            cd binutils-build
+            ../binutils-src/configure \
+              --prefix="/opt/binutils-$BINUTILS_VERSION" \
+              --disable-nls \
+              --disable-werror
+            make -j"$(nproc)" all-binutils all-gas
+            sudo make install-binutils install-gas
+          )
+
+          echo "/opt/binutils-$BINUTILS_VERSION/bin" >> "$GITHUB_PATH"
+          echo "COMPILER_PATH=/opt/binutils-$BINUTILS_VERSION/bin" >> "$GITHUB_ENV"
+
+          "/opt/binutils-$BINUTILS_VERSION/bin/as" --version
 
       # ONNX Runtime v1.23.0 requires CMake 3.28 or higher.
       - name: Install CMake

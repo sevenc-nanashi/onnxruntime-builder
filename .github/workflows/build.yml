@@ -318,6 +318,18 @@ jobs:
         if: steps.cache-build-result.outputs.cache-hit != 'true' && runner.os == 'macOS'
         run: brew install tree
 
+      - name: Use Xcode 16.1 for WebGPU builds
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && runner.os == 'macOS' && contains(matrix.build_opts, '--use_webgpu')
+        run: |
+          xcode_path=/Applications/Xcode_16.1.app
+          if [[ ! -d $xcode_path ]]; then
+            echo "Xcode 16.1 is not installed" >&2
+            exit 1
+          fi
+
+          sudo xcode-select -s "$xcode_path/Contents/Developer"
+          xcodebuild -version
+
       - name: Install and configure build dependencies on Linux
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu')
         run: |

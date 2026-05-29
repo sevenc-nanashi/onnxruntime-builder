@@ -124,8 +124,8 @@ jobs:
             os: ubuntu-22.04
             spec_os: Linux
             spec_arch: x86_64
-            gcc_version: "12"
-            cuda_version: 12.4.1
+            gcc_version: "13"
+            cuda_version: 12.9.1
             cuda_sub_packages: "[]" # デフォルト
             cudnn_url: https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-8.9.7.29_cuda12-archive.tar.xz
             build_opts: |-

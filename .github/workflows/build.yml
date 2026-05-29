@@ -29,7 +29,7 @@ env:
     ${{ inputs.target || 'onnxruntime' }}
   ONNXRUNTIME_VERSION:
     |- # workflow_dispatchでのバージョン名が入る。無指定なら適当なバージョン
-    ${{ inputs.version || '1.25.1' }}
+    ${{ inputs.version || '1.26.0' }}
   RELEASE:
     |- # workflow_dispatchでのreleaseフラグがあればリリースする
     ${{ inputs.release }}

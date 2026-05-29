@@ -404,7 +404,7 @@ jobs:
 
       - name: Set up CUDA
         if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.cuda_version && matrix.cudnn_url
-        uses: Jimver/cuda-toolkit@9b295696791d75d658d8de64c4a85097ad8abeaf # v0.2.16
+        uses: Jimver/cuda-toolkit@3d45d157f327c09c04b50ee6ccdea2d9d017ec76 # v0.2.35
         with:
           cuda: ${{ matrix.cuda_version }}
           sub-packages: ${{ matrix.cuda_sub_packages }}

@@ -1,0 +1,78 @@
+diff --git a/cmake/onnxruntime_providers_cuda.cmake b/cmake/onnxruntime_providers_cuda.cmake
+index 624057dd438e7..989d08205ac73 100644
+--- a/cmake/onnxruntime_providers_cuda.cmake
++++ b/cmake/onnxruntime_providers_cuda.cmake
+@@ -80,6 +80,17 @@
+     # add using ONNXRUNTIME_ROOT so they show up under the 'contrib_ops' folder in Visual Studio
+     source_group(TREE ${ONNXRUNTIME_ROOT} FILES ${onnxruntime_cuda_contrib_ops_cc_srcs} ${onnxruntime_cuda_contrib_ops_cu_srcs})
+     list(APPEND onnxruntime_providers_cuda_src ${onnxruntime_cuda_contrib_ops_cc_srcs} ${onnxruntime_cuda_contrib_ops_cu_srcs})
++  elseif(onnxruntime_DISABLE_CONTRIB_OPS AND NOT onnxruntime_CUDA_MINIMAL)
++    # The ONNX domain CUDA Attention kernel (core/providers/cuda/llm/attention.cc) depends on
++    # attention infrastructure in contrib_ops/cuda/bert/ (flash attention, memory efficient
++    # attention, unfused attention helpers, etc.). Include the bert attention infrastructure
++    # even when contrib ops are disabled so that the ONNX Attention kernel can compile and link.
++    set(onnxruntime_cuda_bert_cc_srcs ${onnxruntime_cuda_contrib_ops_cc_srcs})
++    list(FILTER onnxruntime_cuda_bert_cc_srcs INCLUDE REGEX ".*/contrib_ops/cuda/bert/.*")
++    set(onnxruntime_cuda_bert_cu_srcs ${onnxruntime_cuda_contrib_ops_cu_srcs})
++    list(FILTER onnxruntime_cuda_bert_cu_srcs INCLUDE REGEX ".*/contrib_ops/cuda/bert/.*")
++    source_group(TREE ${ONNXRUNTIME_ROOT} FILES ${onnxruntime_cuda_bert_cc_srcs} ${onnxruntime_cuda_bert_cu_srcs})
++    list(APPEND onnxruntime_providers_cuda_src ${onnxruntime_cuda_bert_cc_srcs} ${onnxruntime_cuda_bert_cu_srcs})
+   endif()
+ 
+   if (onnxruntime_ENABLE_TRAINING_OPS)
+diff --git a/onnxruntime/core/providers/cuda/cuda_execution_provider.h b/onnxruntime/core/providers/cuda/cuda_execution_provider.h
+index 1b2e8494f5f99..537c14fd2b3b3 100644
+--- a/onnxruntime/core/providers/cuda/cuda_execution_provider.h
++++ b/onnxruntime/core/providers/cuda/cuda_execution_provider.h
+@@ -16,10 +16,7 @@
+ #include "core/providers/cuda/shared_inc/cuda_utils.h"
+ #include "core/providers/cuda/shared_inc/cuda_call.h"
+ #include "core/providers/cuda/tunable/cuda_tuning_context.h"
+-
+-#ifndef DISABLE_CONTRIB_OPS
+ #include "contrib_ops/cuda/bert/attention_kernel_options.h"
+-#endif
+ 
+ namespace onnxruntime {
+ 
+@@ -91,13 +88,11 @@ class CUDAExecutionProvider : public IExecutionProvider {
+   bool IsFuseConvBias() const { return info_.fuse_conv_bias; }
+   bool UseTF32() const { return info_.use_tf32; }
+ 
+-#ifndef DISABLE_CONTRIB_OPS
+   // Attention kernel options parsed from sdpa_kernel cuda provider option.
+   const AttentionKernelOptions* GetAttentionKernelOptions() const {
+     attention_kernel_options_.InitializeOnce(info_.sdpa_kernel, true, true);
+     return &attention_kernel_options_;
+   }
+-#endif
+ 
+   ProviderOptions GetProviderOptions() const override {
+     return CUDAExecutionProviderInfo::ToProviderOptions(info_);
+@@ -143,10 +138,8 @@ class CUDAExecutionProvider : public IExecutionProvider {
+   // the tuning context might be altered when calling into a TunableOp
+   mutable cuda::tunable::CudaTuningContext tuning_context_;
+ 
+-#ifndef DISABLE_CONTRIB_OPS
+   // Attention kernel options parsed from sdpa_kernel cuda provider option.
+   mutable AttentionKernelOptions attention_kernel_options_;
+-#endif
+ 
+   class PerThreadContext final {
+    public:
+diff --git a/onnxruntime/core/providers/cuda/cuda_kernel.h b/onnxruntime/core/providers/cuda/cuda_kernel.h
+index 13bf5b37490e0..1d891f204b9bd 100644
+--- a/onnxruntime/core/providers/cuda/cuda_kernel.h
++++ b/onnxruntime/core/providers/cuda/cuda_kernel.h
+@@ -172,11 +172,9 @@ class CudaKernel : public OpKernel {
+     return provider_->UseTF32();
+   }
+ 
+-#ifndef DISABLE_CONTRIB_OPS
+   const AttentionKernelOptions* GetAttentionKernelOptions() const {
+     return provider_->GetAttentionKernelOptions();
+   }
+-#endif
+ 
+   tunable::CudaTuningContext* GetTuningContext() const {
+     return static_cast<tunable::CudaTuningContext*>(provider_->GetTuningContext());

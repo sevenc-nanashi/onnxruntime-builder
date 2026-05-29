@@ -2,21 +2,27 @@ diff --git a/cmake/onnxruntime_providers_cuda.cmake b/cmake/onnxruntime_provider
 index 624057dd438e7..989d08205ac73 100644
 --- a/cmake/onnxruntime_providers_cuda.cmake
 +++ b/cmake/onnxruntime_providers_cuda.cmake
-@@ -80,6 +80,17 @@
+@@ -80,6 +80,23 @@
      # add using ONNXRUNTIME_ROOT so they show up under the 'contrib_ops' folder in Visual Studio
      source_group(TREE ${ONNXRUNTIME_ROOT} FILES ${onnxruntime_cuda_contrib_ops_cc_srcs} ${onnxruntime_cuda_contrib_ops_cu_srcs})
      list(APPEND onnxruntime_providers_cuda_src ${onnxruntime_cuda_contrib_ops_cc_srcs} ${onnxruntime_cuda_contrib_ops_cu_srcs})
 +  elseif(onnxruntime_DISABLE_CONTRIB_OPS AND NOT onnxruntime_CUDA_MINIMAL)
-+    # The ONNX domain CUDA Attention kernel (core/providers/cuda/llm/attention.cc) depends on
-+    # attention infrastructure in contrib_ops/cuda/bert/ (flash attention, memory efficient
-+    # attention, unfused attention helpers, etc.). Include the bert attention infrastructure
-+    # even when contrib ops are disabled so that the ONNX Attention kernel can compile and link.
++    # The ONNX domain CUDA Attention kernel (core/providers/cuda/llm/attention.cc) and CUDA
++    # contrib bert kernels depend on attention infrastructure in contrib_ops/cuda/bert/ and
++    # shared CPU-side bert helper implementations. Include those minimal sources even when
++    # contrib ops are disabled so that the CUDA provider can compile and link.
 +    set(onnxruntime_cuda_bert_cc_srcs ${onnxruntime_cuda_contrib_ops_cc_srcs})
 +    list(FILTER onnxruntime_cuda_bert_cc_srcs INCLUDE REGEX ".*/contrib_ops/cuda/bert/.*")
 +    set(onnxruntime_cuda_bert_cu_srcs ${onnxruntime_cuda_contrib_ops_cu_srcs})
 +    list(FILTER onnxruntime_cuda_bert_cu_srcs INCLUDE REGEX ".*/contrib_ops/cuda/bert/.*")
-+    source_group(TREE ${ONNXRUNTIME_ROOT} FILES ${onnxruntime_cuda_bert_cc_srcs} ${onnxruntime_cuda_bert_cu_srcs})
-+    list(APPEND onnxruntime_providers_cuda_src ${onnxruntime_cuda_bert_cc_srcs} ${onnxruntime_cuda_bert_cu_srcs})
++    set(onnxruntime_cuda_bert_cpu_srcs
++      "${ONNXRUNTIME_ROOT}/contrib_ops/cpu/bert/attention_base.cc"
++      "${ONNXRUNTIME_ROOT}/contrib_ops/cpu/bert/bias_gelu_helper.cc"
++      "${ONNXRUNTIME_ROOT}/contrib_ops/cpu/bert/embed_layer_norm_helper.cc"
++      "${ONNXRUNTIME_ROOT}/contrib_ops/cpu/bert/longformer_attention_base.cc"
++    )
++    source_group(TREE ${ONNXRUNTIME_ROOT} FILES ${onnxruntime_cuda_bert_cc_srcs} ${onnxruntime_cuda_bert_cu_srcs} ${onnxruntime_cuda_bert_cpu_srcs})
++    list(APPEND onnxruntime_providers_cuda_src ${onnxruntime_cuda_bert_cc_srcs} ${onnxruntime_cuda_bert_cu_srcs} ${onnxruntime_cuda_bert_cpu_srcs})
    endif()
  
    if (onnxruntime_ENABLE_TRAINING_OPS)

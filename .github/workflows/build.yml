@@ -109,7 +109,6 @@ jobs:
               onnxruntime_USE_FPA_INTB_GEMM=OFF
               onnxruntime_USE_FLASH_ATTENTION=OFF
               onnxruntime_QUICK_BUILD=ON
-              CMAKE_CUDA_ARCHITECTURES=75;80;90
               CMAKE_CUDA_FLAGS_INIT=-allow-unsupported-compiler -compress-mode=size
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x86
@@ -155,7 +154,6 @@ jobs:
               onnxruntime_USE_FPA_INTB_GEMM=OFF
               onnxruntime_USE_FLASH_ATTENTION=OFF
               onnxruntime_QUICK_BUILD=ON
-              CMAKE_CUDA_ARCHITECTURES=75;80;90
               CMAKE_CUDA_FLAGS_INIT=-allow-unsupported-compiler -compress-mode=size
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-armhf

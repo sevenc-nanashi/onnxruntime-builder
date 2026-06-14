@@ -108,7 +108,11 @@ jobs:
               onnxruntime_NVCC_THREADS=1
               onnxruntime_USE_FPA_INTB_GEMM=OFF
               onnxruntime_USE_FLASH_ATTENTION=OFF
+              onnxruntime_USE_MEMORY_EFFICIENT_ATTENTION=OFF
+              onnxruntime_USE_FP8_KV_CACHE=OFF
               onnxruntime_QUICK_BUILD=ON
+              CMAKE_CUDA_ARCHITECTURES=75\;80\;90
+              CMAKE_CUDA_FLAGS_INIT=-compress-mode=size
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x86
             os: windows-2022
@@ -152,7 +156,11 @@ jobs:
               onnxruntime_NVCC_THREADS=1
               onnxruntime_USE_FPA_INTB_GEMM=OFF
               onnxruntime_USE_FLASH_ATTENTION=OFF
+              onnxruntime_USE_MEMORY_EFFICIENT_ATTENTION=OFF
+              onnxruntime_USE_FP8_KV_CACHE=OFF
               onnxruntime_QUICK_BUILD=ON
+              CMAKE_CUDA_ARCHITECTURES=75\;80\;90
+              CMAKE_CUDA_FLAGS_INIT=-compress-mode=size
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-armhf
             os: ubuntu-22.04

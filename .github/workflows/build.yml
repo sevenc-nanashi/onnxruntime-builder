@@ -38,11 +38,11 @@ env:
     ${{ inputs.target || 'onnxruntime' }}
   ONNXRUNTIME_VERSION:
     |- # workflow_dispatchでのバージョン名が入る。無指定なら適当なバージョン
-    ${{ inputs.version || '1.26.0' }}
+    ${{ inputs.version || '1.31.0' }}
   ONNXRUNTIME_CHECKOUT_REF: |-
-    ${{ inputs.commit_hash || format('v{0}', inputs.version || '1.26.0') }}
+    ${{ inputs.commit_hash || format('v{0}', inputs.version || '1.31.0') }}
   VOICEVOX_ONNXRUNTIME_CHECKOUT_REF: |-
-    ${{ inputs.commit_hash || format('refs/tags/v{0}-voicevox', inputs.version || '1.26.0') }}
+    ${{ inputs.commit_hash || format('refs/tags/v{0}-voicevox', inputs.version || '1.31.0') }}
   RELEASE: |- # workflow_dispatchでのreleaseフラグがあればリリースする
     ${{ inputs.release }}
 
@@ -161,7 +161,7 @@ jobs:
               onnxruntime_USE_FP8_KV_CACHE=OFF
               onnxruntime_QUICK_BUILD=ON
               CMAKE_CUDA_ARCHITECTURES=75\;80\;90
-              CMAKE_CUDA_FLAGS_INIT=-compress-mode=size
+              onnxruntime_CUDA_FATBIN_COMPRESS_SIZE=ON
               onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x86
@@ -250,7 +250,7 @@ jobs:
               onnxruntime_USE_FP8_KV_CACHE=OFF
               onnxruntime_QUICK_BUILD=ON
               CMAKE_CUDA_ARCHITECTURES=75\;80\;90
-              CMAKE_CUDA_FLAGS_INIT=-compress-mode=size
+              onnxruntime_CUDA_FATBIN_COMPRESS_SIZE=ON
               onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-armhf
@@ -679,6 +679,7 @@ jobs:
                 --update \
                 --parallel \
                 --build_shared_lib \
+                --no_telemetry \
                 --compile_no_warning_as_error \
                 --use_webgpu
 
@@ -700,6 +701,7 @@ jobs:
           ${{ matrix.build_opts }}
           )
 
+          # v1.31.0ではテレメトリが既定で有効になるため、従来通り無効にする。
           python ./tools/ci_build/build.py \
             --build_dir ./build \
             --config Release \
@@ -707,6 +709,7 @@ jobs:
             --build \
             --parallel \
             --build_shared_lib \
+            --no_telemetry \
             "${build_opts[@]}" \
             1${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&1' || format('>> {0}_stdout.txt', matrix.artifact_name) }} \
             2${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&2' || format('>> {0}_stderr.txt', matrix.artifact_name) }}

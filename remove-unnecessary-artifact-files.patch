@@ -1,0 +1,48 @@
+# 配布物から、不要なCMake設定、pkg-config設定、dSYM、デバッグ情報を除外する。
+# 外部providerを含まないLinux版では、provider用共有ライブラリも除外する。
+# バージョン更新するときも同じ除外とstripを維持する。
+
+diff --git a/tools/ci_build/github/linux/copy_strip_binary.sh b/tools/ci_build/github/linux/copy_strip_binary.sh
+--- a/tools/ci_build/github/linux/copy_strip_binary.sh
++++ b/tools/ci_build/github/linux/copy_strip_binary.sh
+@@ -22,11 +22,9 @@
+ rmdir $ARTIFACT_NAME/include/onnxruntime
+ # Do not ship onnx_test_runner
+ rm -rf $ARTIFACT_NAME/bin
+-echo "Copy debug symbols in a separate file and strip the original binary."
+ if [[ $LIB_NAME == *.dylib ]]
+ then
+-    dsymutil $BINARY_DIR/$ARTIFACT_NAME/lib/$LIB_NAME -o $BINARY_DIR/$ARTIFACT_NAME/lib/$LIB_NAME.dSYM
+-    strip -S $BINARY_DIR/$ARTIFACT_NAME/lib/$LIB_NAME
++    strip -Sx "$BINARY_DIR/$ARTIFACT_NAME/lib/$LIB_NAME"
+
+     # ORT NuGet packaging expects the unversioned library (libonnxruntime.dylib) to contain the binary content,
+     # because the versioned library is excluded by the nuspec generation script.
+@@ -41,10 +39,25 @@
+     # copy the CoreML EP header for macOS build (libs with .dylib ext)
+     cp $SOURCE_DIR/include/onnxruntime/core/providers/coreml/coreml_provider_factory.h  $BINARY_DIR/$ARTIFACT_NAME/include
+ else
+-   # Linux
+-   mv $ARTIFACT_NAME/lib64 $ARTIFACT_NAME/lib
++    mv $ARTIFACT_NAME/lib64 $ARTIFACT_NAME/lib
++    if [[ $LIB_NAME == *.so.* ]]
++    then
++        LIBRARY_BASENAME=${LIB_NAME%%.so.*}
++        PROVIDER_LIBRARIES=("$BINARY_DIR/$ARTIFACT_NAME/lib/${LIBRARY_BASENAME}_providers_"*.so)
++        "${ARCH_PREFIX}strip" -s \
++            "$BINARY_DIR/$ARTIFACT_NAME/lib/$LIB_NAME" \
++            "${PROVIDER_LIBRARIES[@]}"
++        if ((${#PROVIDER_LIBRARIES[@]} == 1))
++        then
++            rm "$BINARY_DIR/$ARTIFACT_NAME/lib/${LIBRARY_BASENAME}_providers_shared.so"
++        fi
++    fi
+ fi
+
++rm -r \
++    "$BINARY_DIR/$ARTIFACT_NAME/lib/cmake" \
++    "$BINARY_DIR/$ARTIFACT_NAME/lib/pkgconfig"
++
+ # copy the README, licence and TPN
+ cp $SOURCE_DIR/README.md $BINARY_DIR/$ARTIFACT_NAME/README.md
+ cp $SOURCE_DIR/docs/Privacy.md $BINARY_DIR/$ARTIFACT_NAME/Privacy.md

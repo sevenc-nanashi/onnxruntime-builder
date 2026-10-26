@@ -155,6 +155,8 @@ jobs:
               # Flash Attentionを含むNVCCの並列数を制限し、メモリ使用量を抑える。
               --nvcc_threads 1
               --cmake_extra_defines
+              # WindowsではFlash Attentionのコンパイルだけで約4.5時間かかり、ジョブの6時間制限を超える。
+              onnxruntime_USE_FLASH_ATTENTION=OFF
               CMAKE_CUDA_ARCHITECTURES=75\;80\;86\;89\;90\;100\;120
               onnxruntime_CUDA_FATBIN_COMPRESS_SIZE=ON
               onnxruntime_BUILD_UNIT_TESTS=OFF

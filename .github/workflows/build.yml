@@ -153,14 +153,9 @@ jobs:
               --use_cuda
               --disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。Contrib Opsを有効にしてビルドすると6時間（GitHub Actionsの最大実行時間）を超えることがあるため。
               --cmake_extra_defines
-              # そのままビルドするとGitHub ActionsのRunnerが耐えきれなくなってビルドが落ちるのでビルドを軽量化する
+              # ビルド時のメモリ使用量を抑えるため、NVCCの並列数のみ制限する。
               onnxruntime_NVCC_THREADS=1
-              onnxruntime_USE_FPA_INTB_GEMM=OFF
-              onnxruntime_USE_FLASH_ATTENTION=OFF
-              onnxruntime_USE_MEMORY_EFFICIENT_ATTENTION=OFF
-              onnxruntime_USE_FP8_KV_CACHE=OFF
-              onnxruntime_QUICK_BUILD=ON
-              CMAKE_CUDA_ARCHITECTURES=75\;80\;90
+              CMAKE_CUDA_ARCHITECTURES=75\;80\;86\;89\;90\;100\;120
               onnxruntime_CUDA_FATBIN_COMPRESS_SIZE=ON
               onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
@@ -242,14 +237,9 @@ jobs:
               --use_cuda
               --disable_contrib_ops  # contrib opsがあるとGitHub Actions Runnerでは耐えきれなくなる
               --cmake_extra_defines
-              # そのままビルドするとGitHub ActionsのRunnerが耐えきれなくなってビルドが落ちるのでビルドを軽量化する
+              # ビルド時のメモリ使用量を抑えるため、NVCCの並列数のみ制限する。
               onnxruntime_NVCC_THREADS=1
-              onnxruntime_USE_FPA_INTB_GEMM=OFF
-              onnxruntime_USE_FLASH_ATTENTION=OFF
-              onnxruntime_USE_MEMORY_EFFICIENT_ATTENTION=OFF
-              onnxruntime_USE_FP8_KV_CACHE=OFF
-              onnxruntime_QUICK_BUILD=ON
-              CMAKE_CUDA_ARCHITECTURES=75\;80\;90
+              CMAKE_CUDA_ARCHITECTURES=75\;80\;86\;89\;90\;100\;120
               onnxruntime_CUDA_FATBIN_COMPRESS_SIZE=ON
               onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release

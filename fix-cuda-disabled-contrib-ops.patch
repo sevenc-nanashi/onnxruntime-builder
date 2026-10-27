@@ -1,5 +1,5 @@
-# Contrib Ops無効時は、CPU側の検証処理に依存するContribカーネルを除外する。
-# ONNX Attentionが必要とする共通実装は残す。
+# Windows CUDAでContrib Opsを無効にするとビルドが通らなくなるので修正する。
+# ref: https://github.com/microsoft/onnxruntime/issues/33602
 
 diff --git a/cmake/onnxruntime_providers_cuda.cmake b/cmake/onnxruntime_providers_cuda.cmake
 --- a/cmake/onnxruntime_providers_cuda.cmake

@@ -152,7 +152,7 @@ jobs:
               --compile_no_warning_as_error
               --use_cuda
               --disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。Contrib Opsを有効にしてビルドすると6時間（GitHub Actionsの最大実行時間）を超えることがあるため。
-              # Flash Attentionを含むNVCCの並列数を制限し、メモリ使用量を抑える。
+              # NVCCの並列数を制限し、メモリ使用量を抑える。（メモリ使用量が多すぎるとGitHub ActionsのRunnerが落ちる）
               --nvcc_threads 1
               --cmake_extra_defines
               # WindowsではFlash Attentionのコンパイルだけで約4.5時間かかり、ジョブの6時間制限を超える。
@@ -209,7 +209,7 @@ jobs:
             os: ubuntu-22.04
             spec_os: Linux
             spec_arch: x86_64
-            gcc_version: "14" # GCC 12ではDawnのC++20型制約のコンパイルに失敗する
+            gcc_version: "14" # 古いGCCではDawnのコンパイルに失敗する
             build_opts: |-
               --compile_no_warning_as_error
               --use_webgpu
@@ -237,8 +237,8 @@ jobs:
             build_opts: |-
               --compile_no_warning_as_error
               --use_cuda
-              --disable_contrib_ops  # contrib opsがあるとGitHub Actions Runnerでは耐えきれなくなる
-              # Flash Attentionを含むNVCCの並列数を制限し、メモリ使用量を抑える。
+              --disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。Contrib Opsを有効にしてビルドすると6時間（GitHub Actionsの最大実行時間）を超えることがあるため。
+              # NVCCの並列数を制限し、メモリ使用量を抑える。（メモリ使用量が多すぎるとGitHub ActionsのRunnerが落ちる）
               --nvcc_threads 1
               --cmake_extra_defines
               CMAKE_CUDA_ARCHITECTURES=75\;80\;86\;89\;90\;100\;120
@@ -274,7 +274,7 @@ jobs:
             os: ubuntu-22.04-arm
             spec_os: Linux
             spec_arch: AArch64
-            gcc_version: "14" # GCC 12ではDawnのC++20型制約のコンパイルに失敗する
+            gcc_version: "14" # 古いGCCではDawnのコンパイルに失敗する
             symlink_workaround: true
             build_opts: |-
               --compile_no_warning_as_error

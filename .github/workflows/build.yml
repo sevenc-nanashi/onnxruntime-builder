@@ -157,7 +157,9 @@ jobs:
               --cmake_extra_defines
               # WindowsではFlash Attentionのコンパイルだけで約4.5時間かかり、ジョブの6時間制限を超える。
               onnxruntime_USE_FLASH_ATTENTION=OFF
-              CMAKE_CUDA_ARCHITECTURES=75\;80\;86\;89\;90\;100\;120;120-virtual
+              # 将来登場するGPUをサポートするにはPTXをバンドルする必要があるが、デフォルトではバンドルされないため明示的に指定する。onnxruntimeのデフォルト値は以下のURLを参照。
+              # ref: https://github.com/microsoft/onnxruntime/blob/v1.23.2/cmake/external/cuda_configuration.cmake#L117
+              "CMAKE_CUDA_ARCHITECTURES=60-real;70-real;75-real;80-real;86-real;89-real;90a-real;100a-real;120a-real;120-virtual"
               onnxruntime_CUDA_FATBIN_COMPRESS_SIZE=ON
               onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
@@ -241,7 +243,9 @@ jobs:
               # NVCCの並列数を制限し、メモリ使用量を抑える。（メモリ使用量が多すぎるとGitHub ActionsのRunnerが落ちる）
               --nvcc_threads 1
               --cmake_extra_defines
-              CMAKE_CUDA_ARCHITECTURES=75\;80\;86\;89\;90\;100\;120
+              # 将来登場するGPUをサポートするにはPTXをバンドルする必要があるが、デフォルトではバンドルされないため明示的に指定する。onnxruntimeのデフォルト値は以下のURLを参照。
+              # ref: https://github.com/microsoft/onnxruntime/blob/v1.23.2/cmake/external/cuda_configuration.cmake#L117
+              "CMAKE_CUDA_ARCHITECTURES=60-real;70-real;75-real;80-real;86-real;89-real;90a-real;100a-real;120a-real;120-virtual"
               onnxruntime_CUDA_FATBIN_COMPRESS_SIZE=ON
               onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
